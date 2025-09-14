@@ -2,7 +2,12 @@
 @using Soenneker.Blazor.Extensions.EventCallback
 @using Soenneker.Quark.Enums.Colors
 @using Soenneker.Quark.Enums.Size
+@using Soenneker.Quark.Validations
+@using Soenneker.Quark.Validations.Enums
+@using System.Linq.Expressions
+
 @inherits Soenneker.Quark.Components.Element
+@implements Soenneker.Quark.Validations.Abstract.IValidationInput
 
 <input type="checkbox" @attributes="BuildAttributes()" @onchange="HandleChange" />
 
@@ -29,6 +34,27 @@
 	[Parameter]
 	public EventCallback<ChangeEventArgs> OnChange { get; set; }
 
+	[CascadingParameter]
+	public Validation? ParentValidation { get; set; }
+
+	[Parameter]
+	public Expression<Func<bool>>? CheckedExpression { get; set; }
+
+	public object? ValidationValue => Checked;
+
+	protected override async Task OnAfterRenderAsync(bool firstRender)
+	{
+		if (firstRender && ParentValidation is not null)
+		{
+			await ParentValidation.InitializeInput(this);
+
+			if (CheckedExpression is not null)
+				await ParentValidation.InitializeInputExpression(CheckedExpression);
+		}
+
+		await base.OnAfterRenderAsync(firstRender);
+	}
+
 	private string GetColorClass()
 	{
 		return $"form-check-input-{Color.Value}";
@@ -49,11 +75,15 @@
 		var baseClasses = "form-check-input";
 		string? colorClass = GetColorClass();
 		string? sizeClass = GetSizeClass();
+		string? validationClass = GetValidationClass();
 
 		baseClasses = $"{baseClasses} {colorClass}";
 
 		if (sizeClass != null)
 			baseClasses = $"{baseClasses} {sizeClass}";
+
+		if (validationClass != null)
+			baseClasses = $"{baseClasses} {validationClass}";
 
 		attributes["class"] = AppendToClass(attributes.GetValueOrDefault("class")
 			?.ToString(), baseClasses);
@@ -70,6 +100,17 @@
 		return attributes;
 	}
 
+	private string? GetValidationClass()
+	{
+		if (ParentValidation?.Status == ValidationStatus.Error)
+			return "is-invalid";
+
+		if (ParentValidation?.Status == ValidationStatus.Success)
+			return "is-valid";
+
+		return null;
+	}
+
 	private async Task HandleChange(ChangeEventArgs args)
 	{
 		if (args.Value is bool value)
@@ -79,6 +120,9 @@
 		}
 
 		await OnChange.InvokeIfHasDelegate(args);
+
+		if (ParentValidation is not null)
+			await ParentValidation.NotifyInputChanged(Checked);
 	}
 
 }

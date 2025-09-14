@@ -3,6 +3,9 @@
 @using Soenneker.Quark.Checks
 @using Soenneker.Quark.Enums.Colors
 @using Soenneker.Quark.Enums.Size
+@using Soenneker.Quark.Validations
+@using Soenneker.Quark.Validations.Enums
+@using Soenneker.Quark.Validations.Dtos
 
 @inject ILogger<Index> Logger
 
@@ -103,6 +106,28 @@
 </div>
 <p>Last change event: @lastChangeEvent</p>
 
+<br />
+
+<h2>Validation</h2>
+<p>This example requires the checkbox to be checked.</p>
+
+<Validations @ref="validations" Model="@demoModel">
+    <Validation Validator="ValidateTerms">
+        <div class="form-check">
+            <Check @bind-Checked="demoModel.TermsAccepted" />
+            <label class="form-check-label">
+                I accept the terms
+            </label>
+        </div>
+        <ValidationError Class="mt-2" />
+    </Validation>
+
+    <div class="mt-2">
+        <button class="btn btn-primary" @onclick="Submit">Submit</button>
+        <span class="ms-2">@submitResult</span>
+    </div>
+</Validations>
+
 @code{
     private bool isChecked1 = false;
     private bool isChecked2 = false;
@@ -117,6 +142,16 @@
     private bool isChecked11 = false;
     private string lastChangeEvent = "None";
 
+    private Validations? validations;
+
+    private class DemoModel
+    {
+        public bool TermsAccepted { get; set; }
+    }
+
+    private DemoModel demoModel = new();
+    private string submitResult = string.Empty;
+
     protected override void OnInitialized()
     {
         Logger.LogInformation("Checks demo page initialized");
@@ -125,5 +160,28 @@
     private void HandleChange(ChangeEventArgs args)
     {
         lastChangeEvent = $"Value: {args.Value}, Type: {args.Value?.GetType().Name}";
+    }
+
+    private void ValidateTerms(ValidatorEventArgs args)
+    {
+        bool isChecked = args.Value is bool b ? b : demoModel.TermsAccepted;
+        if (!isChecked)
+        {
+            args.Status = ValidationStatus.Error;
+            args.ErrorText = "You must accept the terms.";
+        }
+        else
+        {
+            args.Status = ValidationStatus.Success;
+        }
+    }
+
+    private async Task Submit()
+    {
+        if (validations is null)
+            return;
+
+        bool ok = await validations.Validate();
+        submitResult = ok ? "Submitted!" : "Please fix validation errors.";
     }
 }
