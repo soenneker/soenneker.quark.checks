@@ -46,10 +46,10 @@
 	{
 		if (firstRender && ParentValidation is not null)
 		{
-			await ParentValidation.InitializeInput(this);
-
 			if (CheckedExpression is not null)
 				await ParentValidation.InitializeInputExpression(CheckedExpression);
+
+			await ParentValidation.InitializeInput(this);
 		}
 
 		await base.OnAfterRenderAsync(firstRender);
