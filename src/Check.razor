@@ -1,17 +1,15 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Soenneker.Blazor.Extensions.EventCallback
-@using Soenneker.Quark.Enums.Size
-@using Soenneker.Quark.Validations
-@using Soenneker.Quark.Validations.Enums
 @using System.Linq.Expressions
-@using Soenneker.Quark.Dtos.Colors
+@using Soenneker.Quark.Enums
 
 @inherits Soenneker.Quark.Element
-@implements Soenneker.Quark.Validations.Abstract.IValidationInput
+@implements Soenneker.Quark.IValidationInput
 
 <input type="checkbox" @attributes="BuildAttributes()" @onchange="HandleChange" />
 
 @code {
+	public override string? Name { get; set; } = "Check";
 
     [Parameter]
     public bool Checked { get; set; }
@@ -23,7 +21,7 @@
     public bool Disabled { get; set; }
 
     [Parameter]
-    public Color Color { get; set; } = Color.Primary;
+    public CssValue<ColorBuilder> Color { get; set; } = Quark.Color.Primary;
 
     [Parameter]
     public Size Size { get; set; } = Size.Default;
@@ -57,8 +55,10 @@
 
     private string? GetColorClass()
     {
-        if (Color.IsTheme)
-            return $"form-check-input-{Color.Theme!.Value}";
+        var isTheme = Color.TryGetBootstrapThemeToken(out string token);
+
+        if (isTheme)
+            return $"form-check-input-{token}";
 
         return null;
     }
