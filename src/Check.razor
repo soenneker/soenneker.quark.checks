@@ -24,7 +24,7 @@
     public CssValue<ColorBuilder> Color { get; set; } = Quark.Color.Primary;
 
     [Parameter]
-    public Size Size { get; set; } = Size.Default;
+    public CssValue<SizeBuilder>? Size { get; set; } = Size.Default;
 
     [Parameter]
     public EventCallback<bool> CheckedChanged { get; set; }
@@ -65,7 +65,7 @@
 
     private string? GetSizeClass()
     {
-        if (Size != Size.Default)
+        if (Size != null && !Size.Value.IsEmpty)
             return $"form-check-input-{Size.Value}";
 
         return null;
